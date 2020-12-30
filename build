@@ -1,0 +1,5 @@
+#!/bin/bash
+
+rm -r out/ &> /dev/null
+dotnet build -c Release -o ./out src/*.csproj
+dotnet pack -c Release --force -o ./out src/*.csproj
