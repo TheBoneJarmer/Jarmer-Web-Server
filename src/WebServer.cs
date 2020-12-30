@@ -22,9 +22,11 @@ namespace Jarmer.WebServer
          {
             server = new HttpServer(host, port);
             server.OnRequest += Server_OnRequest;
-            server.OnRequestBlocked += Server_OnRequestBlocked;
             server.OnException += Server_OnException;
             server.OnHttpError += Server_OnHttpError;
+
+            server.OnRequestStart += OnRequestStart;
+            server.OnRequestEnd += OnRequestEnd;
         }
 
         public void Run()
@@ -89,10 +91,6 @@ namespace Jarmer.WebServer
             {
                 HandleResult(response, status, new TextResult(error));
             }
-
-            // If the HandleController method throws an exception the OnRequestEnd event won't be triggered
-
-            OnRequestEnd?.Invoke(response, info);
         }
 
         private void Server_OnRequestBlocked(HttpRequest request, HttpResponse response, HttpConnectionInfo info)
@@ -102,8 +100,6 @@ namespace Jarmer.WebServer
 
         private void Server_OnRequest(HttpRequest request, HttpResponse response, HttpConnectionInfo info)
         {
-            OnRequestStart?.Invoke(request, info);
-
             // If the request is for a media file like a css, js or image file, give that priority
             // If no such content was found we will just assume the user requests a controller action
             if (File.Exists(ContentPath(request.Path)))
@@ -114,8 +110,6 @@ namespace Jarmer.WebServer
             {
                 HandleController(request, info, response);
             }
-
-            OnRequestEnd?.Invoke(response, info);
         }
 
         /* SERVER LOGIC */
@@ -423,5 +417,8 @@ namespace Jarmer.WebServer
         public event OnHttpErrorDelegate OnHttpError;
         public event OnExceptionDelegate OnException;
         public event OnRequestBlockedDelegate OnRequestBlocked;
+
+        public event HttpServer.OnRequestStartDelegate OnRequestStart;
+        public event HttpServer.OnRequestEndDelegate OnRequestEnd;
     }
 }
