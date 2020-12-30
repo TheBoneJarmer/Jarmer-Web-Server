@@ -1,17 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 <PropertyGroup>
-		<Version>0.1.1-alpha</Version>
+		<Version>0.1.2-alpha</Version>
 		<Authors>Ruben Labruyere</Authors>
 		<Company>Ruben Labruyere</Company>
-    <PackageId>jarmer-webserver</PackageId>
+    <PackageId>Jarmer-WebServer</PackageId>
 		<Description>
       Jarmer WebServer is an easy to use light-weight webserver for dotnet applications
 		</Description>
 		<RepositoryUrl>https://github.com/TheBoneJarmer/jarmer-webserver.git</RepositoryUrl>
 		<PackageTags>jarmer,webserver,web-server,web,advancedsockets</PackageTags>
-		<AssemblyVersion>0.1.1.0</AssemblyVersion>
-    <FileVersion>0.1.1.0</FileVersion>
+		<AssemblyVersion>0.1.2.0</AssemblyVersion>
+    <FileVersion>0.1.2.0</FileVersion>
 	</PropertyGroup>
 
   <PropertyGroup>
