@@ -100,27 +100,18 @@ namespace Jarmer.WebServer
         {
             OnRequestStart?.Invoke(request, info);
 
-            try
+            // If the request is for a media file like a css, js or image file, give that priority
+            // If no such content was found we will just assume the user requests a controller action
+            if (File.Exists(ContentPath(request.Path)))
             {
-                // If the request is for a media file like a css, js or image file, give that priority
-                // If no such content was found we will just assume the user requests a controller action
-                if (File.Exists(ContentPath(request.Path)))
-                {
-                    response.SendFile(ContentPath(request.Path));
-                }
-                else
-                {
-                    HandleController(request, info, response);
-                }
+                response.SendFile(ContentPath(request.Path));
             }
-            catch (Exception)
+            else
             {
-                throw;
+                HandleController(request, info, response);
             }
-            finally
-            {
-                OnRequestEnd?.Invoke(response, info);
-            }
+
+            OnRequestEnd?.Invoke(response, info);
         }
 
         /* SERVER LOGIC */
