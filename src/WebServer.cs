@@ -89,6 +89,10 @@ namespace Jarmer.WebServer
             {
                 HandleResult(response, status, new TextResult(error));
             }
+
+            // If the HandleController method throws an exception the OnRequestEnd event won't be triggered
+
+            OnRequestEnd?.Invoke(response, info);
         }
 
         private void Server_OnRequestBlocked(HttpRequest request, HttpResponse response, HttpConnectionInfo info)
@@ -414,14 +418,10 @@ namespace Jarmer.WebServer
         /* EVENTS */
         public delegate ActionResult OnHttpErrorDelegate(HttpRequest request, string error);
         public delegate void OnExceptionDelegate(Exception exception);
-        public delegate void OnRequestStartDelegate(HttpRequest request, HttpConnectionInfo connectionInfo);
-        public delegate void OnRequestEndDelegate(HttpResponse response, HttpConnectionInfo connectionInfo);
         public delegate void OnRequestBlockedDelegate(HttpRequest request, HttpResponse response, HttpConnectionInfo connectionInfo);
 
         public event OnHttpErrorDelegate OnHttpError;
         public event OnExceptionDelegate OnException;
-        public event OnRequestStartDelegate OnRequestStart;
-        public event OnRequestEndDelegate OnRequestEnd;
         public event OnRequestBlockedDelegate OnRequestBlocked;
     }
 }
