@@ -1,0 +1,5 @@
+#!/bin/bash
+
+rm -r out/ &> /dev/null
+dotnet pack -c Release -o out src/*.csproj
+dotnet nuget push out/*.nupkg -s github

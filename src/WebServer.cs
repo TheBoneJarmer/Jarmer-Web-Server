@@ -93,11 +93,6 @@ namespace Jarmer.WebServer
             }
         }
 
-        private void Server_OnRequestBlocked(HttpRequest request, HttpResponse response, HttpConnectionInfo info)
-        {
-            OnRequestBlocked?.Invoke(request, response, info);
-        }
-
         private void Server_OnRequest(HttpRequest request, HttpResponse response, HttpConnectionInfo info)
         {
             // If the request is for a media file like a css, js or image file, give that priority
@@ -412,11 +407,9 @@ namespace Jarmer.WebServer
         /* EVENTS */
         public delegate ActionResult OnHttpErrorDelegate(HttpRequest request, string error);
         public delegate void OnExceptionDelegate(Exception exception);
-        public delegate void OnRequestBlockedDelegate(HttpRequest request, HttpResponse response, HttpConnectionInfo connectionInfo);
 
         public event OnHttpErrorDelegate OnHttpError;
         public event OnExceptionDelegate OnException;
-        public event OnRequestBlockedDelegate OnRequestBlocked;
 
         public event HttpServer.OnRequestStartDelegate OnRequestStart;
         public event HttpServer.OnRequestEndDelegate OnRequestEnd;
