@@ -24,12 +24,11 @@ namespace Jarmer.WebServer
             server.OnRequest += Server_OnRequest;
             server.OnException += Server_OnException;
             server.OnHttpError += Server_OnHttpError;
-
-            server.OnRequestStart += OnRequestStart;
-            server.OnRequestEnd += OnRequestEnd;
+            server.OnRequestStart += Server_OnRequestStart;
+            server.OnRequestEnd += Server_OnRequestEnd;
         }
 
-        public void Run()
+        public void Start()
         {
             var controllerTypes = GetControllerTypes();
 
@@ -91,6 +90,15 @@ namespace Jarmer.WebServer
             {
                 HandleResult(response, status, new TextResult(error));
             }
+        }
+        private void Server_OnRequestStart(HttpRequest request, HttpConnectionInfo connectionInfo)
+        {
+            OnRequestStart?.Invoke(request, connectionInfo);
+        }
+
+        private void Server_OnRequestEnd(HttpResponse response, HttpConnectionInfo connectionInfo)
+        {
+            OnRequestEnd?.Invoke(response, connectionInfo);
         }
 
         private void Server_OnRequest(HttpRequest request, HttpResponse response, HttpConnectionInfo info)
@@ -407,11 +415,12 @@ namespace Jarmer.WebServer
         /* EVENTS */
         public delegate ActionResult OnHttpErrorDelegate(HttpRequest request, string error);
         public delegate void OnExceptionDelegate(Exception exception);
+        public delegate void OnRequestStartDelegate(HttpRequest request, HttpConnectionInfo connectionInfo);
+        public delegate void OnRequestEndDelegate(HttpResponse response, HttpConnectionInfo connectionInfo);
 
         public event OnHttpErrorDelegate OnHttpError;
         public event OnExceptionDelegate OnException;
-
-        public event HttpServer.OnRequestStartDelegate OnRequestStart;
-        public event HttpServer.OnRequestEndDelegate OnRequestEnd;
+        public event OnRequestStartDelegate OnRequestStart;
+        public event OnRequestEndDelegate OnRequestEnd;
     }
 }
