@@ -32,6 +32,22 @@ namespace Jarmer.WebServer
         }
     }
 
+    public class PutAttribute : HttpAttribute
+    {
+        public PutAttribute(string path) : base(HttpMethod.Put, path)
+        {
+
+        }
+    }
+
+    public class DeleteAttribute : HttpAttribute
+    {
+        public DeleteAttribute(string path) : base(HttpMethod.Delete, path)
+        {
+            
+        }
+    }
+
     public class ContentTypeAttribute : Attribute
     {
         public string ContentType { get; private set; }
