@@ -242,7 +242,7 @@ namespace Jarmer.WebServer
         private object[] GenerateActionArgs(HttpRequest request, MethodInfo methodInfo)
         {
             var contentTypeAttrib = methodInfo.GetCustomAttribute<ContentTypeAttribute>();
-            var contentType = "application/x-www-form-urlencoded";
+            var contentType = "";
             var parameters = methodInfo.GetParameters();
             var arguments = new object[0];
 
@@ -259,13 +259,16 @@ namespace Jarmer.WebServer
             }
 
             // Compare the request's content type to the one required by the action
-            if (request.Headers.ContentType == null)
+            if (!string.IsNullOrEmpty(contentType))
             {
-                throw new HttpException(HttpStatusCode.UnsupportedMediaType, "No 'Content-Type' header was present in the HTTP request");
-            }
-            if (!request.Headers.ContentType.StartsWith(contentType))
-            {
-                throw new HttpException(HttpStatusCode.UnsupportedMediaType, $"Invalid content type provided, expected '{contentType}'");
+                if (request.Headers.ContentType == null)
+                {
+                    throw new HttpException(HttpStatusCode.UnsupportedMediaType, "No 'Content-Type' header was present in the HTTP request");
+                }
+                if (!request.Headers.ContentType.StartsWith(contentType))
+                {
+                    throw new HttpException(HttpStatusCode.UnsupportedMediaType, $"Invalid content type provided, expected '{contentType}'");
+                }
             }
 
             // Now, depending on the content type, generate arguments for the method 

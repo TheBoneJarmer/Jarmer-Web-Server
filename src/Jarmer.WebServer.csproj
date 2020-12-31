@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <Version>0.1.7-alpha</Version>
+        <Version>0.1.8-alpha</Version>
         <Authors>Ruben Labruyere</Authors>
         <Company>Ruben Labruyere</Company>
         <PackageId>Jarmer-WebServer</PackageId>
@@ -10,8 +10,8 @@
         </Description>
         <RepositoryUrl>https://github.com/TheBoneJarmer/jarmer-webserver.git</RepositoryUrl>
         <PackageTags>jarmer,webserver,web-server,web,advancedsockets</PackageTags>
-        <AssemblyVersion>0.1.7.0</AssemblyVersion>
-        <FileVersion>0.1.7.0</FileVersion>
+        <AssemblyVersion>0.1.8.0</AssemblyVersion>
+        <FileVersion>0.1.8.0</FileVersion>
     </PropertyGroup>
 
     <PropertyGroup>
