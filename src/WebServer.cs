@@ -208,28 +208,30 @@ namespace Jarmer.WebServer
             var args = new object[parameters.Length];
 
             // Check if the method has arguments and the body is empty, this is to prevent an exception
-            if (parameters.Length != 0 && request.Query == null && request.Body.Data == null && request.Body.KeyValues == null && request.Body.Files == null)
+            if (request.Body != null && request.Headers.ContentType == null)
             {
-                throw new HttpException(HttpStatusCode.BadRequest, "Request contains no input while the action requires it");
+                throw new HttpException(HttpStatusCode.UnsupportedMediaType, "No 'Content-Type' header was present in the HTTP request");
+            }
+            if (parameters.Length != 0 && request.Query == null && request.Body == null)
+            {
+                throw new HttpException("Request contains no input while the action requires it");
             }
 
             // If the attribute was set, use its value to define the expected content type
+            // Otheriwse use the header
             if (contentTypeAttrib != null)
             {
                 contentType = contentTypeAttrib.ContentType;
-            }
 
-            // Compare the request's content type to the one required by the action
-            if (!string.IsNullOrEmpty(contentType))
-            {
-                if (request.Headers.ContentType == null)
-                {
-                    throw new HttpException(HttpStatusCode.UnsupportedMediaType, "No 'Content-Type' header was present in the HTTP request");
-                }
+                // Compare the request's content type to the one required by the action
                 if (!request.Headers.ContentType.StartsWith(contentType))
                 {
                     throw new HttpException(HttpStatusCode.UnsupportedMediaType, $"Invalid content type provided, expected '{contentType}'");
                 }
+            }
+            else
+            {
+                contentType = request.Headers.ContentType;
             }
 
             // Start by fetching args from the query
@@ -248,7 +250,7 @@ namespace Jarmer.WebServer
 
                 UpdateArgsWithQuery(request.Body.KeyValues, parameters, ref args);
             }
-            if (contentType == "application/json")
+            else if (contentType == "application/json")
             {
                 // If there is just 1 parameter we expect it to have the model's datatype
                 if (parameters.Length == 1)
@@ -281,6 +283,16 @@ namespace Jarmer.WebServer
                             continue;
                         }
 
+                        if (param.ParameterType == typeof(string))
+                        {
+                            args[i] = request.CharSet.GetString(request.Body.Data);
+                            continue;
+                        }
+                        if (param.ParameterType == typeof(byte[]))
+                        {
+                            args[i] = request.Body.Data;
+                        }
+
                         try
                         {
                             args[i] = JsonConvert.DeserializeObject(request.CharSet.GetString(request.Body.Data), parameters[i].ParameterType);
@@ -292,7 +304,7 @@ namespace Jarmer.WebServer
                     }
                 }
             }
-            if (contentType == "multipart/form-data")
+            else if (contentType == "multipart/form-data")
             {
                 args = new object[parameters.Length];
 
@@ -302,17 +314,7 @@ namespace Jarmer.WebServer
                     UpdateArgsWithQuery(request.Body.KeyValues, parameters, ref args);
                 }
 
-                // If there is just 1 param and it is an array of HttpFile, assign the body's Files property to it
-                if (parameters.Length == 1 && parameters[0].ParameterType == typeof(HttpFile[]))
-                {
-                    args[0] = request.Body.Files.ToArray();
-                }
-                if (parameters.Length == 1 && parameters[0].ParameterType == typeof(List<HttpFile>))
-                {
-                    args[0] = request.Body.Files.ToList();
-                }
-
-                // If not, match the file keys to the parameters
+                // Then match all remaining fields
                 for (var i=0; i<parameters.Length; i++)
                 {
                     var parameter = parameters[i];
@@ -320,6 +322,11 @@ namespace Jarmer.WebServer
                     var file = request.Body.Files.FirstOrDefault(x => x.Key == parameter.Name);
 
                     // Continue only when a match was found
+                    // Or when there is only 1 parameter
+                    if (parameters.Length == 1)
+                    {
+                        file = request.Body.Files.FirstOrDefault();
+                    }
                     if (file == null)
                     {
                         continue;
@@ -335,11 +342,18 @@ namespace Jarmer.WebServer
                         args[i] = file.Data;
                     }
 
+                    // The webserver also supports an array of httpfiles, which is exactly the same type as the request.Body.Files property
+                    // In this case we just assing the argument without conversion
+                    if (parameter.ParameterType == typeof(HttpFile[]))
+                    {
+                        args[i] = request.Body.Files;
+                    }
+
                     // String conversion is a special case because we don't know the encoding unless it was set as part of the content type
                     // Therefore we will assume the encoding was default unless specified otherwise
                     if (parameter.ParameterType == typeof(string))
                     {
-                        args[i] = file.CharSet.GetString(file.Data.ToArray());
+                        args[i] = file.CharSet.GetString(file.Data);
                     }
 
                     // The webserver will also convert json if the content type is json and the frombody attrib is set
@@ -347,12 +361,38 @@ namespace Jarmer.WebServer
                     {
                         try
                         {
-                            args[i] = JsonConvert.DeserializeObject(file.CharSet.GetString(request.Body.Data), parameters[i].ParameterType);
+                            args[i] = JsonConvert.DeserializeObject(file.CharSet.GetString(file.Data), parameters[i].ParameterType);
                         }
                         catch (JsonReaderException ex)
                         {
                             throw new HttpException(HttpStatusCode.BadRequest, ex.Message);
                         }
+                    }
+                }
+            }
+            else
+            {
+                // If it so happens the user uses neither one of the 3 support content types, we're just going to assume the content is special
+                // And provide it as a byte array to each parameter marked with the FromBody attribute
+                // In this case our conversion options are limited to either a byte array or a string
+                // If the parameter type holds any other value we are just going to ignore it and leave it up to the user to convert it
+                for (var i=0; i<parameters.Length; i++)
+                {
+                    var parameter = parameters[i];
+                    var attrib = parameter.GetCustomAttribute<FromBodyAttribute>();
+
+                    if (attrib == null && parameters.Length > 1)
+                    {
+                        continue;
+                    }
+
+                    if (parameter.ParameterType == typeof(byte[]))
+                    {
+                        args[i] = request.Body.Data;
+                    }
+                    if (parameter.ParameterType == typeof(string))
+                    {
+                        args[i] = request.CharSet.GetString(request.Body.Data);
                     }
                 }
             }
@@ -364,7 +404,14 @@ namespace Jarmer.WebServer
             for (var i=0; i<parameters.Length; i++)
             {
                 var paramInfo = parameters[i];
+                var attrib = paramInfo.GetCustomAttribute<FromBodyAttribute>();
                 var key = paramInfo.Name.ToLower();
+
+                // If the from body attribute is set the user specifically requested the input coming from the body
+                if (attrib != null)
+                {
+                    continue;
+                }
 
                 if (paramInfo.HasDefaultValue)
                 {
