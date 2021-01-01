@@ -44,6 +44,13 @@ namespace Jarmer.WebServer
                     var contentTypeAttrib = methodInfo.GetCustomAttribute<ContentTypeAttribute>();
                     var parameters = methodInfo.GetParameters();
 
+                    // If the method contains neither an HttpAttribute and returns no action result
+                    // We'll assume it is not meant to be an action at all
+                    if (httpAttrib == null && !ReturnsActionResult(methodInfo))
+                    {
+                        continue;
+                    }
+
                     // Actions need to return an object of type ActionResult and contain an http attribute
                     // That is how we know the method is meant as an action
                     // If either one of them is missing or invalid, the method is considered broken
@@ -60,6 +67,8 @@ namespace Jarmer.WebServer
                     {
                         throw new Exception($"Action {methodInfo.Name} in controller {controllerType.Name} is not public");
                     }
+
+                    // Depending on the method and content type there are some validations to go through as well
                     if (contentTypeAttrib != null && httpAttrib.Method == HttpMethod.Get)
                     {
                         throw new Exception($"Action {methodInfo.Name} in controller {controllerType.Name} has a ContentType attribute defined but the Http attribute's Method property is set to HttpMethod.Get, which is an illegal combination since GET requests do not have a body");
