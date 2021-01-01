@@ -42,6 +42,7 @@ namespace Jarmer.WebServer
                     var attributes = methodInfo.GetCustomAttributes();
                     var httpAttrib = methodInfo.GetCustomAttribute<HttpAttribute>();
                     var contentTypeAttrib = methodInfo.GetCustomAttribute<ContentTypeAttribute>();
+                    var parameters = methodInfo.GetParameters();
 
                     // Actions need to return an object of type ActionResult and contain an http attribute
                     // That is how we know the method is meant as an action
@@ -66,6 +67,10 @@ namespace Jarmer.WebServer
                     if (contentTypeAttrib != null && contentTypeAttrib.ContentType == "application/json" && methodInfo.GetParameters().Length != 1)
                     {
                         throw new Exception($"Action {methodInfo.Name} in controller {controllerType.Name} has too many parameters. If the action is configured to accept json the method should have only 1 parameter whose type represents an object which can be mapped to the JSON object");
+                    }
+                    if (contentTypeAttrib == null && parameters.Length > 0 && httpAttrib.Method != HttpMethod.Get)
+                    {
+                        throw new Exception($"Action {methodInfo.Name} in controller {controllerType.Name} has no ContentType attribute set. This is required for all non-GET requests");
                     }
                 }
             }
