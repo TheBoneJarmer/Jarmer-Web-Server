@@ -60,6 +60,12 @@ namespace Jarmer.WebServer
         }
     }
 
+    [AttributeUsage(AttributeTargets.Parameter)]
+    public class FromBodyAttribute : Attribute
+    {
+        
+    }
+
     public abstract class CustomWebAttribute : Attribute
     {
         public abstract ActionResult Handle(HttpRequest request);

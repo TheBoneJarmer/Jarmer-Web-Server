@@ -67,20 +67,6 @@ namespace Jarmer.WebServer
                     {
                         throw new Exception($"Action {methodInfo.Name} in controller {controllerType.Name} is not public");
                     }
-
-                    // Depending on the method and content type there are some validations to go through as well
-                    if (contentTypeAttrib != null && httpAttrib.Method == HttpMethod.Get)
-                    {
-                        throw new Exception($"Action {methodInfo.Name} in controller {controllerType.Name} has a ContentType attribute defined but the Http attribute's Method property is set to HttpMethod.Get, which is an illegal combination since GET requests do not have a body");
-                    }
-                    if (contentTypeAttrib != null && contentTypeAttrib.ContentType == "application/json" && methodInfo.GetParameters().Length != 1)
-                    {
-                        throw new Exception($"Action {methodInfo.Name} in controller {controllerType.Name} has too many parameters. If the action is configured to accept json the method should have only 1 parameter whose type represents an object which can be mapped to the JSON object");
-                    }
-                    if (contentTypeAttrib == null && parameters.Length > 0 && httpAttrib.Method != HttpMethod.Get)
-                    {
-                        throw new Exception($"Action {methodInfo.Name} in controller {controllerType.Name} has no ContentType attribute set. This is required for all non-GET requests");
-                    }
                 }
             }
 
@@ -179,19 +165,7 @@ namespace Jarmer.WebServer
         private void HandleAction(HttpRequest request, HttpConnectionInfo info, HttpResponse response, Type controllerType, MethodInfo methodInfo)
         {
             var controller = (IController)Activator.CreateInstance(controllerType);
-            var arguments = new object[0];
-            var parameters = methodInfo.GetParameters();
-
-            // If the method is GET, try matching the parameters from the query
-            // Otheriwse, in case of POST, PUT, DELETE and what not try getting it from the body
-            if (request.Method == HttpMethod.Get)
-            {
-                arguments = GenerateActionArgs(request.Query.ToDictionary(), methodInfo);
-            }
-            else
-            {
-                arguments = GenerateActionArgs(request, methodInfo);
-            }           
+            var arguments = GenerateActionArgs(request, methodInfo);
 
             // Set required parameters
             controller.Request = request;
@@ -226,47 +200,20 @@ namespace Jarmer.WebServer
                 throw ex.InnerException;
             }
         }
-        private object[] GenerateActionArgs(Dictionary<string, string> query, MethodInfo methodInfo)
-        {
-            var parameters = methodInfo.GetParameters();
-            var arguments = new object[parameters.Length];
-
-            if (query.Count < parameters.Count(x => !x.HasDefaultValue))
-            {
-                throw new HttpException(HttpStatusCode.BadRequest, "Not enough arguments provided");
-            }
-
-            for (var i=0; i<parameters.Length; i++)
-            {
-                var paramInfo = parameters[i];
-                var key = paramInfo.Name.ToLower();
-
-                if (paramInfo.HasDefaultValue)
-                {
-                    arguments[i] = paramInfo.DefaultValue;
-                }
-                if (query.ContainsKey(key))
-                {
-                    arguments[i] = Convert.ChangeType(HttpUtils.ConvertUrlEncoding(query[key]), paramInfo.ParameterType);
-                }
-            }
-
-            return arguments;
-        }
         private object[] GenerateActionArgs(HttpRequest request, MethodInfo methodInfo)
         {
             var contentTypeAttrib = methodInfo.GetCustomAttribute<ContentTypeAttribute>();
             var contentType = "";
             var parameters = methodInfo.GetParameters();
-            var arguments = new object[0];
+            var args = new object[parameters.Length];
 
             // Check if the method has arguments and the body is empty, this is to prevent an exception
-            if (parameters.Length != 0 && request.Body.Data == null && request.Body.KeyValues == null && request.Body.Files == null)
+            if (parameters.Length != 0 && request.Query == null && request.Body.Data == null && request.Body.KeyValues == null && request.Body.Files == null)
             {
-                throw new HttpException(HttpStatusCode.BadRequest, "Request contains no body or uploaded files while the action requires input");
+                throw new HttpException(HttpStatusCode.BadRequest, "Request contains no input while the action requires it");
             }
 
-            // If the default content type is overriden with an attribute, use the value of the attribute
+            // If the attribute was set, use its value to define the expected content type
             if (contentTypeAttrib != null)
             {
                 contentType = contentTypeAttrib.ContentType;
@@ -285,53 +232,149 @@ namespace Jarmer.WebServer
                 }
             }
 
+            // Start by fetching args from the query
+            if (request.Query != null)
+            {
+                UpdateArgsWithQuery(request.Query.ToDictionary(), parameters, ref args);
+            }
+
             // Now, depending on the content type, generate arguments for the method 
             if (contentType == "application/x-www-form-urlencoded")
             {
-                arguments = GenerateActionArgs(request.Body.KeyValues, methodInfo);
+                if (request.Body.KeyValues == null)
+                {
+                    throw new HttpException("Request body contains no keyvalue pairs");
+                }
+
+                UpdateArgsWithQuery(request.Body.KeyValues, parameters, ref args);
             }
             if (contentType == "application/json")
             {
-                // Added an additional try catch here because invalid json should not "crash" the request by triggering a 500
-                // but rather make the input invalid with a 400 as the error message that the JsonConvert.DeserializeObject produces
-                // tells exactly at which character the json is broken
-                //
-                // This information is much more relevant to the user than the "Something went wrong" message since something did went wrong
-                // but not because of an unkown runtime error, which is what the 500 status is actually saying
-                try
+                // If there is just 1 parameter we expect it to have the model's datatype
+                if (parameters.Length == 1)
                 {
-                    arguments = new object[1];
-                    arguments[0] = JsonConvert.DeserializeObject(Encoding.ASCII.GetString(request.Body.Data), parameters[0].ParameterType);
+                    // Added an additional try catch here because invalid json should not "crash" the request by triggering a 500
+                    // but rather make the input invalid with a 400 as the error message that the JsonConvert.DeserializeObject produces
+                    // tells exactly at which character the json is broken.
+                    try
+                    {
+                        args[0] = JsonConvert.DeserializeObject(Encoding.ASCII.GetString(request.Body.Data), parameters[0].ParameterType);
+                    }
+                    catch (JsonReaderException ex)
+                    {
+                        throw new HttpException(HttpStatusCode.BadRequest, ex.Message);
+                    }
                 }
-                catch (JsonReaderException ex)
+
+                // If not, we expect one of the parameters to contain a FromBody attribute
+                // Otherwise we can't know which parameter is supposed to be used as model
+                // In that case, the argument will be null
+                if (parameters.Length > 1)
                 {
-                    throw new HttpException(HttpStatusCode.BadRequest, ex.Message);
+                    for (var i=0; i<parameters.Length; i++)
+                    {
+                        var param = parameters[i];
+                        var attrib = param.GetCustomAttribute<FromBodyAttribute>();
+
+                        if (attrib == null)
+                        {
+                            continue;
+                        }
+
+                        try
+                        {
+                            args[i] = JsonConvert.DeserializeObject(request.CharSet.GetString(request.Body.Data), parameters[i].ParameterType);
+                        }
+                        catch (JsonReaderException ex)
+                        {
+                            throw new HttpException(HttpStatusCode.BadRequest, ex.Message);
+                        }
+                    }
                 }
             }
             if (contentType == "multipart/form-data")
             {
-                arguments = new object[parameters.Length];
+                args = new object[parameters.Length];
 
                 // First match all normal fields
                 if (request.Body.KeyValues != null)
                 {
-                    arguments = GenerateActionArgs(request.Body.KeyValues, methodInfo);
+                    UpdateArgsWithQuery(request.Body.KeyValues, parameters, ref args);
                 }
 
-                // Than match the http files
+                // If there is just 1 param and it is an array of HttpFile, assign the body's Files property to it
+                if (parameters.Length == 1 && parameters[0].ParameterType == typeof(HttpFile[]))
+                {
+                    args[0] = request.Body.Files.ToArray();
+                }
+                if (parameters.Length == 1 && parameters[0].ParameterType == typeof(List<HttpFile>))
+                {
+                    args[0] = request.Body.Files.ToList();
+                }
+
+                // If not, match the file keys to the parameters
                 for (var i=0; i<parameters.Length; i++)
                 {
                     var parameter = parameters[i];
+                    var attrib = parameter.GetCustomAttribute<FromBodyAttribute>();
                     var file = request.Body.Files.FirstOrDefault(x => x.Key == parameter.Name);
 
-                    if (file != null)
+                    // Continue only when a match was found
+                    if (file == null)
                     {
-                        arguments[i] = file;
+                        continue;
+                    }
+
+                    // The webserver will convert the file or its contents depending on the parameter type
+                    if (parameter.ParameterType == typeof(HttpFile))
+                    {
+                        args[i] = file;
+                    }
+                    if (parameter.ParameterType == typeof(byte[]))
+                    {
+                        args[i] = file.Data;
+                    }
+
+                    // String conversion is a special case because we don't know the encoding unless it was set as part of the content type
+                    // Therefore we will assume the encoding was default unless specified otherwise
+                    if (parameter.ParameterType == typeof(string))
+                    {
+                        args[i] = file.CharSet.GetString(file.Data.ToArray());
+                    }
+
+                    // The webserver will also convert json if the content type is json and the frombody attrib is set
+                    if (attrib != null && file.ContentType.StartsWith("application/json"))
+                    {
+                        try
+                        {
+                            args[i] = JsonConvert.DeserializeObject(file.CharSet.GetString(request.Body.Data), parameters[i].ParameterType);
+                        }
+                        catch (JsonReaderException ex)
+                        {
+                            throw new HttpException(HttpStatusCode.BadRequest, ex.Message);
+                        }
                     }
                 }
             }
 
-            return arguments;
+            return args;
+        }
+        private void UpdateArgsWithQuery(Dictionary<string, string> query, ParameterInfo[] parameters, ref object[] args)
+        {
+            for (var i=0; i<parameters.Length; i++)
+            {
+                var paramInfo = parameters[i];
+                var key = paramInfo.Name.ToLower();
+
+                if (paramInfo.HasDefaultValue)
+                {
+                    args[i] = paramInfo.DefaultValue;
+                }
+                if (query.ContainsKey(key))
+                {
+                    args[i] = Convert.ChangeType(HttpUtils.ConvertUrlEncoding(query[key]), paramInfo.ParameterType);
+                }
+            }
         }
         private void HandleResult(HttpResponse response, HttpStatusCode statusCode, ActionResult result)
         {
