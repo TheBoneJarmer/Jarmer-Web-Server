@@ -103,15 +103,27 @@ namespace Jarmer.WebServer
 
         private void Server_OnRequest(HttpRequest request, HttpResponse response, HttpConnectionInfo info)
         {
-            // If the request is for a media file like a css, js or image file, give that priority
-            // If no such content was found we will just assume the user requests a controller action
-            if (File.Exists(ContentPath(request.Path)))
+            try
             {
-                response.SendFile(ContentPath(request.Path));
+                // If the request is for a media file like a css, js or image file, give that priority
+                // If no such content was found we will just assume the user requests a controller action
+                if (File.Exists(ContentPath(request.Path)))
+                {
+                    response.SendFile(ContentPath(request.Path));
+                }
+                else
+                {
+                    HandleController(request, info, response);
+                }
             }
-            else
+            catch (HttpException ex)
             {
-                HandleController(request, info, response);
+                Server_OnHttpError(ex.Status, ex.Message, request, response, info);
+            }
+            catch (Exception ex)
+            {
+                Server_OnHttpError(HttpStatusCode.InternalServerError, "Something went wrong", request, response, info);
+                Server_OnException(ex);
             }
         }
 
