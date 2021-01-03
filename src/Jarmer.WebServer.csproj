@@ -19,7 +19,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AdvancedSockets" Version="1.2.4" />
+        <PackageReference Include="AdvancedSockets" Version="1.2.5" />
         <!--<ProjectReference Include="..\..\advancedsockets\src\AdvancedSockets\AdvancedSockets.csproj" />-->
     </ItemGroup>
 
