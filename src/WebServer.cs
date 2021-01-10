@@ -254,7 +254,7 @@ namespace Jarmer.WebServer
             }
 
             // Now, depending on the content type, generate arguments for the method 
-            if (contentType == "application/x-www-form-urlencoded")
+            if (contentType != null && contentType.StartsWith("application/x-www-form-urlencoded"))
             {
                 if (request.Body.KeyValues == null)
                 {
@@ -263,7 +263,7 @@ namespace Jarmer.WebServer
 
                 UpdateArgsWithQuery(request.Body.KeyValues, parameters, ref args);
             }
-            else if (contentType == "application/json")
+            else if (contentType != null && contentType.StartsWith("application/json"))
             {
                 // If there is just 1 parameter we expect it to have the model's datatype
                 if (parameters.Length == 1)
@@ -317,7 +317,7 @@ namespace Jarmer.WebServer
                     }
                 }
             }
-            else if (contentType == "multipart/form-data")
+            else if (contentType != null && contentType.StartsWith("multipart/form-data"))
             {
                 args = new object[parameters.Length];
 
