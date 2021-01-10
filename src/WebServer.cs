@@ -11,6 +11,7 @@ using Jarmer.WebServer.Interfaces;
 using AdvancedSockets;
 using System.Text;
 using AdvancedSockets.Http.Server;
+using System.Runtime.ExceptionServices;
 
 namespace Jarmer.WebServer
 {
@@ -209,7 +210,7 @@ namespace Jarmer.WebServer
             }
             catch (TargetInvocationException ex)
             {
-                throw ex.InnerException;
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
             }
         }
         private object[] GenerateActionArgs(HttpRequest request, MethodInfo methodInfo)
