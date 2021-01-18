@@ -1,5 +1,5 @@
 using System;
-using System.Net.Http;
+using AdvancedSockets;
 using AdvancedSockets.Http;
 
 namespace Jarmer.WebServer
