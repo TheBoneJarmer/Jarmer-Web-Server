@@ -272,7 +272,7 @@ namespace Jarmer.WebServer
                     // tells exactly at which character the json is broken.
                     try
                     {
-                        args[0] = JsonConvert.DeserializeObject(Encoding.ASCII.GetString(request.Body.Data), parameters[0].ParameterType);
+                        args[0] = JsonConvert.DeserializeObject(request.CharSet.GetString(request.Body.Data), parameters[0].ParameterType);
                     }
                     catch (JsonReaderException ex)
                     {
@@ -303,6 +303,7 @@ namespace Jarmer.WebServer
                         if (param.ParameterType == typeof(byte[]))
                         {
                             args[i] = request.Body.Data;
+                            continue;
                         }
 
                         try
