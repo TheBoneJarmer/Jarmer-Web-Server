@@ -385,27 +385,23 @@ namespace Jarmer.WebServer
             }
             else
             {
-                // If it so happens the user uses neither one of the 3 support content types, we're just going to assume the content is special
-                // And provide it as a byte array to each parameter marked with the FromBody attribute
+                // If it so happens the user uses neither one of the 3 support content types, we're just going to assume the content is special and provide it to each parameter
                 // In this case our conversion options are limited to either a byte array or a string
                 // If the parameter type holds any other value we are just going to ignore it and leave it up to the user to convert it
-                for (var i=0; i<parameters.Length; i++)
+                if (request.Body != null)
                 {
-                    var parameter = parameters[i];
-                    var attrib = parameter.GetCustomAttribute<FromBodyAttribute>();
+                    for (var i=0; i<parameters.Length; i++)
+                    {
+                        var parameter = parameters[i];
 
-                    if (attrib == null && parameters.Length > 1)
-                    {
-                        continue;
-                    }
-
-                    if (parameter.ParameterType == typeof(byte[]))
-                    {
-                        args[i] = request.Body.Data;
-                    }
-                    if (parameter.ParameterType == typeof(string))
-                    {
-                        args[i] = request.CharSet.GetString(request.Body.Data);
+                        if (parameter.ParameterType == typeof(byte[]))
+                        {
+                            args[i] = request.Body.Data;
+                        }
+                        if (parameter.ParameterType == typeof(string))
+                        {
+                            args[i] = request.CharSet.GetString(request.Body.Data);
+                        }
                     }
                 }
             }
