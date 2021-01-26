@@ -246,6 +246,12 @@ namespace Jarmer.WebServer
                 contentType = request.Headers.ContentType;
             }
 
+            // Empty the contenttype if the body is empty
+            if (request.Body == null || (request.Body.Data == null && request.Body.Files == null && request.Body.KeyValues == null))
+            {
+                contentType = "";
+            }
+
             // Start by fetching args from the query
             if (request.Query != null)
             {
@@ -414,7 +420,7 @@ namespace Jarmer.WebServer
             {
                 var paramInfo = parameters[i];
                 var attrib = paramInfo.GetCustomAttribute<FromBodyAttribute>();
-                var key = paramInfo.Name.ToLower();
+                var name = paramInfo.Name.ToLower();
 
                 // If the from body attribute is set the user specifically requested the input coming from the body
                 if (attrib != null)
@@ -426,9 +432,16 @@ namespace Jarmer.WebServer
                 {
                     args[i] = paramInfo.DefaultValue;
                 }
-                if (query.ContainsKey(key))
+
+                for (var j=0; j<query.Count; j++)
                 {
-                    args[i] = Convert.ChangeType(HttpUtils.ConvertUrlEncoding(query[key]), paramInfo.ParameterType);
+                    var key = query.Keys.ToArray()[j].ToLower();
+                    var value = query.Values.ToArray()[j];
+
+                    if (name == key)
+                    {
+                        args[i] = Convert.ChangeType(HttpUtils.ConvertUrlEncoding(value), paramInfo.ParameterType);
+                    }
                 }
             }
         }
