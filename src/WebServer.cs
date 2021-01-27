@@ -224,9 +224,14 @@ namespace Jarmer.WebServer
             {
                 throw new HttpException(HttpStatusCode.UnsupportedMediaType, "No 'Content-Type' header was present in the HTTP request");
             }
-            if (parameters.Length != 0 && request.Query == null && request.Body == null)
+
+            // Update args with defaults
+            for (var i=0; i<args.Length; i++)
             {
-                throw new HttpException("Request contains no input while the action requires it");
+                if (parameters[i].HasDefaultValue)
+                {
+                    args[i] = parameters[i].DefaultValue;
+                }
             }
 
             // If the attribute was set, use its value to define the expected content type
@@ -426,11 +431,6 @@ namespace Jarmer.WebServer
                 if (attrib != null)
                 {
                     continue;
-                }
-
-                if (paramInfo.HasDefaultValue)
-                {
-                    args[i] = paramInfo.DefaultValue;
                 }
 
                 for (var j=0; j<query.Count; j++)
