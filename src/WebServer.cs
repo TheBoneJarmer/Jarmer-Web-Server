@@ -96,9 +96,9 @@ namespace Jarmer.WebServer
             OnRequestStart?.Invoke(request, connectionInfo);
         }
 
-        private void Server_OnRequestEnd(HttpResponse response, HttpConnectionInfo connectionInfo)
+        private void Server_OnRequestEnd(HttpRequest request, HttpResponse response, HttpConnectionInfo connectionInfo)
         {
-            OnRequestEnd?.Invoke(response, connectionInfo);
+            OnRequestEnd?.Invoke(request, response, connectionInfo);
         }
 
         private void Server_OnRequest(HttpRequest request, HttpResponse response, HttpConnectionInfo info)
@@ -545,7 +545,7 @@ namespace Jarmer.WebServer
         public delegate ActionResult OnHttpErrorDelegate(HttpRequest request, string error);
         public delegate void OnExceptionDelegate(Exception exception);
         public delegate void OnRequestStartDelegate(HttpRequest request, HttpConnectionInfo connectionInfo);
-        public delegate void OnRequestEndDelegate(HttpResponse response, HttpConnectionInfo connectionInfo);
+        public delegate void OnRequestEndDelegate(HttpRequest request, HttpResponse response, HttpConnectionInfo connectionInfo);
 
         public event OnHttpErrorDelegate OnHttpError;
         public event OnExceptionDelegate OnException;

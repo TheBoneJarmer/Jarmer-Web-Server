@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <Version>0.1.18-alpha</Version>
+        <Version>0.1.19</Version>
         <Authors>Ruben Labruyere</Authors>
         <Company>Ruben Labruyere</Company>
         <PackageId>Jarmer-WebServer</PackageId>
@@ -17,7 +17,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AdvancedSockets" Version="1.7.0" />
+        <PackageReference Include="AdvancedSockets" Version="1.8.1" />
         <!--<ProjectReference Include="..\..\advancedsockets\src\AdvancedSockets\AdvancedSockets.csproj" />-->
     </ItemGroup>
 
