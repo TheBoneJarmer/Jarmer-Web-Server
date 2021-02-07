@@ -2,6 +2,7 @@
 
 branch=`git branch --show-current`
 
+rm *.nupkg
 dotnet pack -c Release -o . ./src/*.csproj
 
 if [ $branch = "develop" ]
