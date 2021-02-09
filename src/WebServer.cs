@@ -473,6 +473,7 @@ namespace Jarmer.WebServer
                 response.StatusCode = HttpStatusCode.Redirect;
             }
 
+            OnSend?.Invoke(response);
             response.Send();
         }
 
@@ -546,10 +547,12 @@ namespace Jarmer.WebServer
         public delegate void OnExceptionDelegate(Exception exception);
         public delegate void OnRequestStartDelegate(HttpRequest request, HttpConnectionInfo connectionInfo);
         public delegate void OnRequestEndDelegate(HttpRequest request, HttpResponse response, HttpConnectionInfo connectionInfo);
+        public delegate void OnSendDelegate(HttpResponse response);
 
         public event OnHttpErrorDelegate OnHttpError;
         public event OnExceptionDelegate OnException;
         public event OnRequestStartDelegate OnRequestStart;
         public event OnRequestEndDelegate OnRequestEnd;
+        public event OnSendDelegate OnSend;
     }
 }
