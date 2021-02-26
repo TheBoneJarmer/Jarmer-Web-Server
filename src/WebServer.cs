@@ -11,21 +11,35 @@ using AdvancedSockets;
 using System.Text;
 using AdvancedSockets.Http.Server;
 using System.Runtime.ExceptionServices;
+using System.Threading;
 
 namespace Jarmer.WebServer
 {
     public class WebServer
     {
         private HttpServer server;
+        private string host;
+        private int port;
 
+        public string Host
+        {
+            get { return host; }
+        }
+
+        public int Port
+        {
+            get { return port; }
+        }
+
+        public WebServer(int port)
+        {
+            this.host = Dns.GetHostName();
+            this.port = port;
+        }
         public WebServer(string host, int port)
-         {
-            server = new HttpServer(host, port);
-            server.OnRequest += Server_OnRequest;
-            server.OnException += Server_OnException;
-            server.OnHttpError += Server_OnHttpError;
-            server.OnRequestStart += Server_OnRequestStart;
-            server.OnRequestEnd += Server_OnRequestEnd;
+        {
+            this.host = host;
+            this.port = port;
         }
 
         public void Start()
@@ -71,6 +85,12 @@ namespace Jarmer.WebServer
             }
 
             // If validation succeeded, start the server
+            server = new HttpServer(host, port);
+            server.OnRequest += Server_OnRequest;
+            server.OnException += Server_OnException;
+            server.OnHttpError += Server_OnHttpError;
+            server.OnRequestStart += Server_OnRequestStart;
+            server.OnRequestEnd += Server_OnRequestEnd;
             server.Start();
         }
 
