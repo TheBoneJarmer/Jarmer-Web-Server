@@ -31,6 +31,25 @@ namespace Jarmer.WebServer
         } 
     }
 
+    public class HtmlResult : ActionResult
+    {
+        public string Html { get; private set; }
+
+        public HtmlResult(string html)
+        {
+            Html = html;
+        }
+    }
+
+    public class ContentResult : ActionResult
+    {
+        public string Path { get; private set; }
+        public ContentResult(string path)
+        {
+            Path = path;
+        }
+    }
+
     public class RedirectResult : ActionResult
     {
         public string Url { get; private set; }

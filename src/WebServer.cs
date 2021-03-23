@@ -104,7 +104,7 @@ namespace Jarmer.WebServer
         {
             if (OnHttpError != null)
             {
-                HandleResult(response, status, OnHttpError(request, error));
+                HandleResult(response, status, OnHttpError(request, status, error));
             }
             else
             {
@@ -115,12 +115,10 @@ namespace Jarmer.WebServer
         {
             OnRequestStart?.Invoke(request, connectionInfo);
         }
-
         private void Server_OnRequestEnd(HttpRequest request, HttpResponse response, HttpConnectionInfo connectionInfo)
         {
             OnRequestEnd?.Invoke(request, response, connectionInfo);
         }
-
         private void Server_OnRequest(HttpRequest request, HttpResponse response, HttpConnectionInfo info)
         {
             try
@@ -193,7 +191,6 @@ namespace Jarmer.WebServer
 
             throw new HttpException(HttpStatusCode.NotFound, $"Action or content {request.Method.ToString().ToUpper()} {request.Path} not found");
         }
-
         private void HandleAction(HttpRequest request, HttpConnectionInfo info, HttpResponse response, Type controllerType, MethodInfo methodInfo)
         {
             var controller = (IController)Activator.CreateInstance(controllerType);
@@ -477,24 +474,44 @@ namespace Jarmer.WebServer
 
                 response.Headers.ContentType = "application/json";
                 response.Body = Encoding.ASCII.GetBytes(json);
+                response.Send();
             }
+            
             if (result.GetType() == typeof(TextResult))
             {
                 var textResult = (TextResult)result;
 
                 response.Headers.ContentType = "text/plain; charset=utf-8";
                 response.Body = Encoding.ASCII.GetBytes(textResult.Text);
+                response.Send();
             }
+            
             if (result.GetType() == typeof(RedirectResult))
             {
                 var redirectResult = (RedirectResult)result;
 
                 response.Headers.Location = redirectResult.Url;
                 response.StatusCode = HttpStatusCode.Redirect;
+                response.Send();
             }
 
-            OnSend?.Invoke(response);
-            response.Send();
+            if (result.GetType() == typeof(HtmlResult))
+            {
+                var htmlResult = (HtmlResult) result;
+
+                response.Headers.ContentType = "text/html; charset=utf-8";
+                response.StatusCode = HttpStatusCode.OK;
+                response.Body = Encoding.UTF8.GetBytes(htmlResult.Html);
+                response.Send();
+            }
+
+            if (result.GetType() == typeof(ContentResult))
+            {
+                var contentResult = (ContentResult) result;
+                var contentPath = ContentPath(contentResult.Path);
+                
+                response.SendFile(contentPath);
+            }
         }
 
         private string ContentPath(string path)
@@ -563,16 +580,14 @@ namespace Jarmer.WebServer
         }
 
         /* EVENTS */
-        public delegate ActionResult OnHttpErrorDelegate(HttpRequest request, string error);
+        public delegate ActionResult OnHttpErrorDelegate(HttpRequest request, HttpStatusCode status, string error);
         public delegate void OnExceptionDelegate(Exception exception);
         public delegate void OnRequestStartDelegate(HttpRequest request, HttpConnectionInfo connectionInfo);
         public delegate void OnRequestEndDelegate(HttpRequest request, HttpResponse response, HttpConnectionInfo connectionInfo);
-        public delegate void OnSendDelegate(HttpResponse response);
 
         public event OnHttpErrorDelegate OnHttpError;
         public event OnExceptionDelegate OnException;
         public event OnRequestStartDelegate OnRequestStart;
         public event OnRequestEndDelegate OnRequestEnd;
-        public event OnSendDelegate OnSend;
     }
 }

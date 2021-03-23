@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <Version>0.3.0</Version>
+        <Version>0.4.0</Version>
         <Authors>Ruben Labruyere</Authors>
         <Company>Ruben Labruyere</Company>
         <PackageId>Jarmer-WebServer</PackageId>
@@ -10,6 +10,7 @@
         </Description>
         <RepositoryUrl>https://github.com/TheBoneJarmer/jarmer-webserver.git</RepositoryUrl>
         <PackageTags>jarmer,webserver,web-server,web,advancedsockets</PackageTags>
+        <AssemblyName>rsw-website</AssemblyName>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -17,7 +18,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AdvancedSockets" Version="1.9.0" />
+        <PackageReference Include="AdvancedSockets" Version="1.10.0" />
         <!--<ProjectReference Include="..\..\advancedsockets\src\AdvancedSockets\AdvancedSockets.csproj" />-->
     </ItemGroup>
 
