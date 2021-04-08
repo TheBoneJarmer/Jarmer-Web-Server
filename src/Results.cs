@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Net;
 
-namespace Jarmer.WebServer
+namespace WebserverCS
 {
     public abstract class ActionResult
     {

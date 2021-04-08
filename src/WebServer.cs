@@ -6,14 +6,13 @@ using System.Net;
 using System.Reflection;
 using AdvancedSockets.Http;
 using Newtonsoft.Json;
-using Jarmer.WebServer.Interfaces;
+using WebserverCS.Interfaces;
 using AdvancedSockets;
 using System.Text;
 using AdvancedSockets.Http.Server;
 using System.Runtime.ExceptionServices;
-using System.Threading;
 
-namespace Jarmer.WebServer
+namespace WebserverCS
 {
     public class WebServer
     {

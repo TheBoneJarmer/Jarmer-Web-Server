@@ -1,4 +1,4 @@
-namespace Jarmer.WebServer
+namespace WebserverCS
 {
     public enum SupportedContentType
     {

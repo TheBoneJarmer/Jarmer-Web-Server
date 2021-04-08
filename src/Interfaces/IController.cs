@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using AdvancedSockets.Http;
 
-namespace Jarmer.WebServer.Interfaces
+namespace WebserverCS.Interfaces
 {
     public interface IController
     {

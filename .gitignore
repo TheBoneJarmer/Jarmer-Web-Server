@@ -351,3 +351,4 @@ MigrationBackup/
 
 # Ruben Labruyere
 out/
+.idea/

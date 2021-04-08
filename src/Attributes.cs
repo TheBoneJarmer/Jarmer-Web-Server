@@ -2,7 +2,7 @@ using System;
 using AdvancedSockets;
 using AdvancedSockets.Http;
 
-namespace Jarmer.WebServer
+namespace WebserverCS
 {
     public abstract class HttpAttribute : Attribute
     {
