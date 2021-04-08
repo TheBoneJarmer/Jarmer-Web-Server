@@ -1,7 +1,7 @@
 ﻿$branch = git branch --show-current;
 
 Remove-Item *.nupkg
-dotnet pack -c Release -o . ./src/Jarmer.WebServer.csproj
+dotnet pack -c Release -o . ./src/WebserverCS.csproj
 
 if ($branch -eq "develop")
 {

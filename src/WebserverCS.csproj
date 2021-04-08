@@ -4,12 +4,12 @@
         <Version>0.4.2</Version>
         <Authors>Ruben Labruyere</Authors>
         <Company>Ruben Labruyere</Company>
-        <PackageId>Jarmer-WebServer</PackageId>
+        <PackageId>WebserverCS</PackageId>
         <Description>
-            Jarmer WebServer is an easy to use light-weight webserver for dotnet applications
+            WebServerCS is an easy to use light-weight webserver for dotnet applications
         </Description>
-        <RepositoryUrl>https://github.com/TheBoneJarmer/jarmer-webserver.git</RepositoryUrl>
-        <PackageTags>jarmer,webserver,web-server,web,advancedsockets</PackageTags>
+        <RepositoryUrl>https://github.com/TheBoneJarmer/webservercs.git</RepositoryUrl>
+        <PackageTags>dotnet,csharp,webserver,web-server,web,advancedsockets</PackageTags>
     </PropertyGroup>
 
     <PropertyGroup>
