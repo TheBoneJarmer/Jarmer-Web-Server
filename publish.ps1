@@ -5,7 +5,7 @@ dotnet pack -c Release -o . ./src/WebserverCS.csproj
 
 if ($branch -eq "develop")
 {
-    dotnet nuget push -s github *.nupkg
+    dotnet nuget push -s github -k $env:GITHUB_API_KEY *.nupkg
 }
 elseif ($branch -eq "main")
 {
@@ -15,5 +15,3 @@ else
 {
     echo "Can only publish nuget package on develop or main branch";
 }
-
-Remove-Item *.nupkg

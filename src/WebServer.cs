@@ -29,14 +29,25 @@ namespace WebserverCS
         {
             get { return port; }
         }
+        
+        /// <summary>
+        /// If set, overrides and sets the headers before the response is being sent
+        /// </summary>
+        /// <remarks>Use this with caution. If you are not sure what to do with this, rather not touch it than.</remarks>
+        public HttpHeaders Headers { get; private set; }
 
-        public WebServer(int port)
+        private WebServer()
+        {
+            Headers = new HttpHeaders();
+        }
+        
+        public WebServer(int port) : this()
         {
             this.host = Dns.GetHostName();
             this.port = port;
         }
 
-        public WebServer(string host, int port)
+        public WebServer(string host, int port) : this()
         {
             this.host = host;
             this.port = port;
@@ -91,8 +102,6 @@ namespace WebserverCS
             server.OnRequest += Server_OnRequest;
             server.OnException += Server_OnException;
             server.OnHttpError += Server_OnHttpError;
-            server.OnRequestStart += Server_OnRequestStart;
-            server.OnRequestEnd += Server_OnRequestEnd;
             server.Start();
         }
 
@@ -114,18 +123,10 @@ namespace WebserverCS
             }
         }
 
-        private void Server_OnRequestStart(HttpRequest request, HttpConnectionInfo connectionInfo)
-        {
-            OnRequestStart?.Invoke(request, connectionInfo);
-        }
-
-        private void Server_OnRequestEnd(HttpRequest request, HttpResponse response, HttpConnectionInfo connectionInfo)
-        {
-            OnRequestEnd?.Invoke(request, response, connectionInfo);
-        }
-
         private void Server_OnRequest(HttpRequest request, HttpResponse response, HttpConnectionInfo info)
         {
+            OnRequest?.Invoke(request, info);
+
             try
             {
                 // If the request is for a media file like a css, js or image file, give that priority
@@ -154,6 +155,25 @@ namespace WebserverCS
         private void HandleController(HttpRequest request, HttpConnectionInfo info, HttpResponse response)
         {
             var controllerTypes = GetControllerTypes();
+            
+            // Handle pre-flight requests
+            if (request.Method == HttpMethod.Options)
+            {
+                response.StatusCode = HttpStatusCode.NoContent;
+                response.Headers.AccessControlAllowOrigin = "*";
+                response.Headers.AccessControlAllowMethods = "POST,GET,PUT,DELETE,OPTIONS";
+                response.Headers.AccessControlAllowHeaders = "*";
+                response.Headers.AccessControlMaxAge = "86400";
+
+                // Allow overrides
+                foreach (var entry in Headers.ToDictionary())
+                {
+                    response.Headers[entry.Key] = entry.Value;
+                }
+
+                response.Send();
+                return;
+            }
 
             // First gather all methods which match the request's method and path
             foreach (var controllerType in controllerTypes)
@@ -481,7 +501,15 @@ namespace WebserverCS
         private void HandleResult(HttpResponse response, HttpStatusCode statusCode, ActionResult result)
         {
             response.StatusCode = statusCode;
-            response.Headers.Server = "Reapenshaw Web Server";
+            response.Headers.AccessControlAllowOrigin = "*";
+            response.Headers.AccessControlAllowMethods = "POST,GET,PUT,DELETE,OPTIONS";
+            response.Headers.AccessControlAllowHeaders = "*";
+            response.Headers.AccessControlMaxAge = "86400";
+
+            foreach (var entry in Headers.ToDictionary())
+            {
+                response.Headers[entry.Key] = entry.Value;
+            }
 
             if (result.GetType() == typeof(JsonResult))
             {
@@ -602,16 +630,12 @@ namespace WebserverCS
 
         /* EVENTS */
         public delegate ActionResult OnHttpErrorDelegate(HttpRequest request, HttpStatusCode status, string error);
-
         public delegate void OnExceptionDelegate(Exception exception);
-
-        public delegate void OnRequestStartDelegate(HttpRequest request, HttpConnectionInfo connectionInfo);
-
-        public delegate void OnRequestEndDelegate(HttpRequest request, HttpResponse response, HttpConnectionInfo connectionInfo);
+        public delegate void OnRequestDelegate(HttpRequest request, HttpConnectionInfo info);
+        public delegate void OnResponseDelegate(HttpResponse response, HttpConnectionInfo info);
 
         public event OnHttpErrorDelegate OnHttpError;
         public event OnExceptionDelegate OnException;
-        public event OnRequestStartDelegate OnRequestStart;
-        public event OnRequestEndDelegate OnRequestEnd;
+        public event OnRequestDelegate OnRequest;
     }
 }
